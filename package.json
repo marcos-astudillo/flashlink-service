@@ -1,0 +1,25 @@
+{
+  "name": "flashlink-service",
+  "version": "1.0.0",
+  "description": "Production-ready URL shortener backend based on a distributed systems design.",
+  "main": "dist/server.js",
+  "type": "commonjs",
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/server.js",
+    "typecheck": "tsc --noEmit",
+    "test": "node -e \"console.log('Tests not configured yet')\""
+  },
+  "keywords": [
+    "url-shortener",
+    "backend",
+    "typescript",
+    "fastify",
+    "redis",
+    "postgresql",
+    "system-design"
+  ],
+  "author": "Marcos Astudillo",
+  "license": "MIT"
+}
