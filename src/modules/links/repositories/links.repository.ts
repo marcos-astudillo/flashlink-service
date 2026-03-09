@@ -22,4 +22,15 @@ export class LinksRepository {
       where: { code },
     });
   }
+
+  async findReusableByLongUrl(longUrl: string) {
+    return prisma.link.findFirst({
+      where: {
+        longUrl,
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+  }
 }
