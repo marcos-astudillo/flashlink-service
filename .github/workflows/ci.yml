@@ -1,0 +1,79 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: flashlink
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres -d flashlink"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      NODE_ENV: test
+      PORT: 3000
+      BASE_URL: http://localhost:3000
+      LOG_LEVEL: info
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/flashlink
+      REDIS_URL: redis://localhost:6379
+      FEATURE_ANALYTICS: "true"
+      FEATURE_LINK_EXPIRATION: "true"
+      FEATURE_DEDUPE: "false"
+      RATE_LIMIT_ENABLED: "true"
+      REDIRECT_CACHE_TTL_SECONDS: 3600
+      RATE_LIMIT_MAX: 100
+      RATE_LIMIT_WINDOW_MINUTES: 1
+      CREATE_LINK_RATE_LIMIT_MAX: 20
+      REDIRECT_RATE_LIMIT_MAX: 300
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma client
+        run: npx prisma generate
+
+      - name: Apply database migrations
+        run: npx prisma migrate deploy
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Run tests
+        run: npm run test:run
