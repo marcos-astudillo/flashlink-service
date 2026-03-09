@@ -5,6 +5,7 @@ import rateLimit from "@fastify/rate-limit";
 
 import { healthRoute } from "./health/health.route";
 import { healthController } from "./health/health.controller";
+import { linksRoutes } from "./modules/links/routes/links.route";
 
 export function buildApp() {
   const app = Fastify({
@@ -30,6 +31,8 @@ export function buildApp() {
   app.get(healthRoute.url, async () => {
     return healthController();
   });
+
+  app.register(linksRoutes);
 
   return app;
 }
