@@ -2,7 +2,7 @@ services:
   postgres:
     image: postgres:15
     container_name: flashlink_postgres
-    restart: always
+    restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -11,13 +11,83 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d flashlink"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   redis:
     image: redis:7
     container_name: flashlink_redis
-    restart: always
+    restart: unless-stopped
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/api/Dockerfile
+    container_name: flashlink_api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      BASE_URL: http://localhost:3000
+      LOG_LEVEL: info
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/flashlink
+      REDIS_URL: redis://redis:6379
+      FEATURE_ANALYTICS: "true"
+      FEATURE_LINK_EXPIRATION: "true"
+      FEATURE_DEDUPE: "false"
+      RATE_LIMIT_ENABLED: "true"
+      REDIRECT_CACHE_TTL_SECONDS: 3600
+      RATE_LIMIT_MAX: 100
+      RATE_LIMIT_WINDOW_MINUTES: 1
+      CREATE_LINK_RATE_LIMIT_MAX: 20
+      REDIRECT_RATE_LIMIT_MAX: 300
+    ports:
+      - "3000:3000"
+    command: sh -c "npx prisma migrate deploy && node dist/server.js"
+
+  worker:
+    build:
+      context: .
+      dockerfile: docker/worker/Dockerfile
+    container_name: flashlink_worker
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      BASE_URL: http://localhost:3000
+      LOG_LEVEL: info
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/flashlink
+      REDIS_URL: redis://redis:6379
+      FEATURE_ANALYTICS: "true"
+      FEATURE_LINK_EXPIRATION: "true"
+      FEATURE_DEDUPE: "false"
+      RATE_LIMIT_ENABLED: "true"
+      REDIRECT_CACHE_TTL_SECONDS: 3600
+      RATE_LIMIT_MAX: 100
+      RATE_LIMIT_WINDOW_MINUTES: 1
+      CREATE_LINK_RATE_LIMIT_MAX: 20
+      REDIRECT_RATE_LIMIT_MAX: 300
+    command: sh -c "npx prisma migrate deploy && node dist/worker.js"
 
 volumes:
   postgres_data:
