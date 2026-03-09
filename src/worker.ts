@@ -1,3 +1,5 @@
+import "dotenv/config";
+
 import { analyticsWorker } from "./modules/analytics/workers/analytics.worker";
 
 analyticsWorker.on("ready", () => {

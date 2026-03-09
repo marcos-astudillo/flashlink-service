@@ -1,3 +1,5 @@
+import "dotenv/config";
+
 import { buildApp } from "./app";
 import { env } from "./common/config/env";
 import { redis } from "./infrastructure/cache/redis";

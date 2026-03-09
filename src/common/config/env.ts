@@ -37,4 +37,11 @@ export const env = {
   FEATURE_LINK_EXPIRATION: toBoolean(process.env.FEATURE_LINK_EXPIRATION, true),
   FEATURE_DEDUPE: toBoolean(process.env.FEATURE_DEDUPE, false),
   RATE_LIMIT_ENABLED: toBoolean(process.env.RATE_LIMIT_ENABLED, true),
+  RATE_LIMIT_MAX: toNumber(process.env.RATE_LIMIT_MAX, 100),
+  RATE_LIMIT_WINDOW_MINUTES: toNumber(process.env.RATE_LIMIT_WINDOW_MINUTES, 1),
+  CREATE_LINK_RATE_LIMIT_MAX: toNumber(
+    process.env.CREATE_LINK_RATE_LIMIT_MAX,
+    20,
+  ),
+  REDIRECT_RATE_LIMIT_MAX: toNumber(process.env.REDIRECT_RATE_LIMIT_MAX, 300),
 } as const;
