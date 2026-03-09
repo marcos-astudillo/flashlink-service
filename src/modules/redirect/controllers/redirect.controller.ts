@@ -1,5 +1,6 @@
 import { FastifyReply, FastifyRequest } from "fastify";
 
+import { PublishClickEventService } from "../../analytics/services/publish-click-event.service";
 import { LinksRepository } from "../../links/repositories/links.repository";
 import { RedirectCacheRepository } from "../repositories/redirect-cache.repository";
 import { ResolveLinkService } from "../services/resolve-link.service";
@@ -14,8 +15,19 @@ export async function redirectController(
     linksRepository,
     redirectCacheRepository,
   );
+  const publishClickEventService = new PublishClickEventService();
 
   const result = await resolveLinkService.execute(request.params.code);
+
+  void publishClickEventService.execute(result.code).catch((error) => {
+    request.log.error(
+      {
+        error,
+        code: result.code,
+      },
+      "Failed to publish click event",
+    );
+  });
 
   request.log.info(
     {
