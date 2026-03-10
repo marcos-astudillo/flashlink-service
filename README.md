@@ -430,13 +430,7 @@ This project intentionally includes several production-oriented backend patterns
 - **Dockerized services** provide consistent local and cloud execution.
 - **Typed schemas and CI** improve maintainability and correctness.
 
-## System Design Reference
-
-This implementation follows the architecture described in the system design document:
-
-https://github.com/marcos-astudillo/system-design-notes
-
-The project demonstrates how the design can be translated into a production-ready backend service.
+---
 
 ## License
 
