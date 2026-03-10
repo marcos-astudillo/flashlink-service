@@ -1,133 +1,73 @@
 # Flashlink Service
 
-Production-ready URL shortener backend built from a distributed systems design document. The service provides short link creation, low-latency redirects, Redis-based caching, asynchronous click analytics, Dockerized local development, and CI validation through GitHub Actions.
+Production-ready URL shortener backend built with **Fastify**, **TypeScript**, **PostgreSQL**, **Redis**, **Prisma**, and **BullMQ**.
+
+This project was designed and implemented as a backend engineering portfolio project focused on clean architecture, scalability, observability, background processing, and production-oriented deployment practices.
 
 ## Overview
 
-Flashlink Service is designed as a modular backend system with a write path and a read path separated by responsibility:
+Flashlink Service provides a complete short-link platform with:
 
-- **Write path**: creates short links and persists them in PostgreSQL.
-- **Read path**: resolves short codes quickly using Redis cache and falls back to PostgreSQL when needed.
-- **Async analytics path**: publishes click events to a queue and processes them in a worker without blocking redirects.
-
-This repository is implemented as a public backend portfolio project focused on clean architecture, scalability, and production-oriented engineering practices.
-
-## Features
-
-- Short URL creation with optional expiration
-- Redirect resolution with `302 Found`
-- `404 Not Found` for unknown codes
-- `410 Gone` for expired links
-- Redis cache-aside strategy for redirect resolution
-- Asynchronous click analytics using BullMQ + worker
-- Daily click aggregation in PostgreSQL
-- Feature flags for analytics, dedupe, expiration, and rate limiting
-- Configurable route-based rate limiting
-- Infrastructure health checks for PostgreSQL and Redis
-- Graceful shutdown for API and worker processes
-- Unit, integration, and end-to-end tests
-- Dockerized API, worker, PostgreSQL, and Redis
-- GitHub Actions CI for typecheck, unit tests, and integration tests
-
-## Tech Stack
-
-### Backend
-- Node.js
-- TypeScript
-- Fastify
-
-### Data
-- PostgreSQL
-- Prisma ORM
-- Redis
-
-### Async Processing
-- BullMQ
-
-### Testing
-- Vitest
-- Fastify `app.inject()` for integration testing
-
-### Infrastructure
-- Docker
-- Docker Compose
-- GitHub Actions
+- short link creation
+- redirect resolution
+- Redis cache-aside strategy for hot lookups
+- asynchronous click analytics processing with a worker
+- PostgreSQL persistence with Prisma
+- configurable rate limiting
+- optional link expiration
+- Dockerized local development and deployment
+- GitHub Actions CI pipeline
+- Railway deployment
+- OpenAPI documentation with Swagger UI
 
 ## Architecture
 
-### Main Components
+At a high level, the system works like this:
 
-- **API Service**
-  - Creates short links
-  - Resolves redirect requests
-  - Publishes analytics jobs
+1. The client creates a short URL through the API.
+2. The API stores link metadata in PostgreSQL.
+3. Redirect requests first try Redis.
+4. On cache miss, the API loads the link from PostgreSQL and populates Redis.
+5. Redirects are returned immediately.
+6. Click analytics are published asynchronously to a BullMQ queue.
+7. A worker consumes analytics jobs and updates daily aggregates in PostgreSQL.
 
-- **PostgreSQL**
-  - Stores links
-  - Stores daily click aggregates
+### High-level flow
 
-- **Redis**
-  - Caches redirect mappings
-  - Backs BullMQ queues
+```text
+Client
+  |
+  v
+Fastify API
+  |-----------------------> PostgreSQL (links, daily click aggregates)
+  |
+  |-----------------------> Redis (redirect cache, queue backend)
+  |
+  '-- publish analytics --> BullMQ queue --> Worker --> PostgreSQL
+```
 
-- **Worker Service**
-  - Consumes analytics jobs
-  - Persists daily click aggregates
+## Tech Stack
 
-### Request Flows
-
-#### 1. Create Link
-`POST /v1/links`
-
-1. Validate request body
-2. Optionally deduplicate by `longUrl`
-3. Generate short code
-4. Persist link in PostgreSQL
-5. Return short link response
-
-#### 2. Redirect
-`GET /:code`
-
-1. Check Redis cache
-2. If missing, query PostgreSQL
-3. Validate expiration
-4. Cache resolved mapping
-5. Publish analytics event asynchronously
-6. Return `302 Found`
-
-#### 3. Analytics
-
-1. Redirect controller publishes a click event
-2. BullMQ stores the job in Redis
-3. Worker consumes the job
-4. Worker increments daily click aggregate in PostgreSQL
+- **Runtime:** Node.js
+- **Language:** TypeScript
+- **Framework:** Fastify
+- **ORM:** Prisma
+- **Database:** PostgreSQL
+- **Cache / Queue Backend:** Redis
+- **Background Jobs:** BullMQ
+- **Testing:** Vitest + Supertest
+- **Containerization:** Docker + Docker Compose
+- **CI:** GitHub Actions
+- **Deployment:** Railway
 
 ## Project Structure
 
 ```text
 flashlink-service/
-├── .github/
-│   └── workflows/
-│       └── ci.yml
-├── docker/
-│   ├── api/
-│   │   └── Dockerfile
-│   └── worker/
-│       └── Dockerfile
-├── prisma/
-│   ├── migrations/
-│   └── schema.prisma
 ├── src/
 │   ├── common/
-│   │   ├── config/
-│   │   ├── errors/
-│   │   ├── logger/
-│   │   └── utils/
 │   ├── health/
 │   ├── infrastructure/
-│   │   ├── cache/
-│   │   ├── database/
-│   │   └── queue/
 │   ├── modules/
 │   │   ├── analytics/
 │   │   ├── links/
@@ -135,62 +75,89 @@ flashlink-service/
 │   ├── app.ts
 │   ├── server.ts
 │   └── worker.ts
+├── prisma/
 ├── tests/
-│   ├── e2e/
+│   ├── unit/
 │   ├── integration/
-│   └── unit/
-├── .dockerignore
-├── .env.example
+│   └── e2e/
+├── docker/
+│   ├── api/
+│   └── worker/
+├── docs/
+│   └── images/
+├── .github/workflows/
 ├── docker-compose.yml
 ├── package.json
-├── README.md
-├── tsconfig.build.json
-├── tsconfig.json
-└── vitest.config.ts
+└── README.md
 ```
 
-## API Endpoints
+## Main Features
 
-### Create Short Link
+### 1. Short link creation
+Creates a short code for a provided URL.
 
-**POST** `/v1/links`
+**Endpoint**
 
-#### Request
+```http
+POST /v1/links
+```
+
+**Request body**
 
 ```json
 {
   "longUrl": "https://www.google.com",
-  "expiresAt": "2027-01-01T00:00:00.000Z"
+  "expiresAt": "2026-12-31T00:00:00.000Z"
 }
 ```
 
-#### Response `201 Created`
+**Response**
 
 ```json
 {
-  "code": "AbC123x",
+  "code": "Ab12xYz",
   "longUrl": "https://www.google.com",
-  "shortUrl": "http://localhost:3000/AbC123x",
-  "createdAt": "2026-03-09T20:00:00.000Z",
-  "expiresAt": "2027-01-01T00:00:00.000Z"
+  "shortUrl": "https://your-domain/Ab12xYz",
+  "createdAt": "2026-03-10T00:00:00.000Z",
+  "expiresAt": "2026-12-31T00:00:00.000Z"
 }
 ```
 
-### Resolve Short Link
+### 2. Redirect resolution
+Resolves a short code and returns an HTTP redirect.
 
-**GET** `/:code`
+**Endpoint**
 
-#### Responses
+```http
+GET /:code
+```
 
-- `302 Found` → redirects to original URL
-- `404 Not Found` → short link does not exist
-- `410 Gone` → short link expired
+**Behaviors**
 
-### Health Check
+- `302 Found` if the short link exists
+- `404 Not Found` if the code does not exist
+- `410 Gone` if the link is expired
 
-**GET** `/health`
+### 3. Redis cache-aside strategy
+Redirect resolution first checks Redis for fast reads. On cache miss, the API loads from PostgreSQL and stores the result in Redis.
 
-#### Response `200 OK`
+### 4. Async analytics pipeline
+Redirect requests do not block on analytics writes.
+
+- API publishes click events to BullMQ
+- Worker consumes jobs asynchronously
+- PostgreSQL stores daily click aggregates in `ClickEventDaily`
+
+### 5. Health checks
+The service exposes a health endpoint with infrastructure dependency status.
+
+**Endpoint**
+
+```http
+GET /health
+```
+
+**Response**
 
 ```json
 {
@@ -203,34 +170,75 @@ flashlink-service/
 }
 ```
 
-## Data Model
+### 6. Production-oriented controls
 
-### Link
+- feature flags
+- route-level configurable rate limiting
+- graceful shutdown for API and worker
+- Dockerized services
+- CI workflow for typecheck and tests
+- OpenAPI / Swagger docs
 
-- `id`
-- `code`
-- `longUrl`
-- `createdAt`
-- `expiresAt`
+## API Documentation
 
-### ClickEventDaily
+Swagger UI is available at:
 
-- `id`
-- `code`
-- `date`
-- `clicks`
-- `createdAt`
-- `updatedAt`
+```text
+/docs
+```
 
-## Environment Variables
+OpenAPI spec is available at:
 
-Use `.env.example` as the base.
+```text
+/openapi.json
+```
+
+### Swagger UI
+
+![Swagger UI](docs/images/swagger-functional.png)
+
+### OpenAPI JSON
+
+![OpenAPI JSON](docs/images/openapi-json.png)
+
+## Database Snapshots
+
+### Links table
+
+![PostgreSQL Link table](docs/images/postgres-dba.png)
+
+### Daily click aggregates
+
+![PostgreSQL ClickEventDaily table](docs/images/postgres-dba-clickevent.png)
+
+## Railway Deployment
+
+### API service logs
+
+![Railway API logs](docs/images/flashlink-service1.png)
+
+### Worker service logs
+
+![Railway Worker logs](docs/images/flashlink-worker1.png)
+
+## Local Development
+
+### 1. Install dependencies
+
+```bash
+npm install
+```
+
+### 2. Configure environment variables
+
+Create a `.env` file based on `.env.example`.
+
+Example:
 
 ```env
 NODE_ENV=development
 PORT=3000
-BASE_URL=http://localhost:3000
-
+BASE_URL=http://127.0.0.1:3000
 LOG_LEVEL=info
 
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/flashlink
@@ -242,69 +250,45 @@ FEATURE_DEDUPE=false
 RATE_LIMIT_ENABLED=true
 
 REDIRECT_CACHE_TTL_SECONDS=3600
-
 RATE_LIMIT_MAX=100
 RATE_LIMIT_WINDOW_MINUTES=1
 CREATE_LINK_RATE_LIMIT_MAX=20
 REDIRECT_RATE_LIMIT_MAX=300
 ```
 
-### Feature Flags
-
-- `FEATURE_ANALYTICS`: enables async click analytics publishing
-- `FEATURE_LINK_EXPIRATION`: enables expiration behavior
-- `FEATURE_DEDUPE`: reuses an existing link for the same `longUrl`
-- `RATE_LIMIT_ENABLED`: enables route-level rate limiting
-
-## Running Locally
-
-### 1. Install dependencies
-
-```bash
-npm install
-```
-
-### 2. Create environment file
-
-```bash
-cp .env.example .env
-```
-
-On Windows PowerShell:
-
-```powershell
-Copy-Item .env.example .env
-```
-
-### 3. Start PostgreSQL and Redis
+### 3. Start infrastructure
 
 ```bash
 docker compose up -d postgres redis
 ```
 
-### 4. Run database migrations
+### 4. Apply migrations
 
 ```bash
 npx prisma migrate dev
 ```
 
-### 5. Start API
+### 5. Run the API
 
 ```bash
 npm run dev
 ```
 
-### 6. Start worker
-
-In another terminal:
+### 6. Run the worker
 
 ```bash
 npm run worker:dev
 ```
 
-## Running with Docker
+### 7. Open Swagger
 
-Build and start the full stack:
+```text
+http://127.0.0.1:3000/docs
+```
+
+## Docker
+
+### Build and run the full stack
 
 ```bash
 docker compose up --build
@@ -312,15 +296,17 @@ docker compose up --build
 
 This starts:
 
+- API
+- Worker
 - PostgreSQL
 - Redis
-- API service
-- Worker service
 
-Stop everything:
+### Useful commands
 
 ```bash
 docker compose down
+npm run build
+npm run typecheck
 ```
 
 ## Testing
@@ -340,9 +326,9 @@ docker compose up -d postgres redis
 npm run test:integration
 ```
 
-### E2E tests
+### End-to-end tests
 
-Requires PostgreSQL, Redis, and the worker running:
+Requires PostgreSQL, Redis, and the worker:
 
 ```bash
 docker compose up -d postgres redis
@@ -350,7 +336,7 @@ npm run worker:dev
 npm run test:e2e
 ```
 
-### Full suite
+### Full test suite
 
 ```bash
 npm run test:run
@@ -358,7 +344,7 @@ npm run test:run
 
 ## CI
 
-GitHub Actions workflow runs:
+GitHub Actions runs:
 
 - dependency installation
 - Prisma client generation
@@ -375,60 +361,64 @@ Workflow file:
 
 ## Deployment Notes
 
-### Render
+This project is designed to deploy cleanly on Railway using four services in the same project:
 
-Recommended for hosting the API service.
+- API
+- Worker
+- PostgreSQL
+- Redis
 
-Suggested setup:
+### API service
 
-- **Web Service** → API container / Node service
-- Environment variables from `.env.example`
-- Health check path: `/health`
+- public domain enabled
+- Dockerfile path: `docker/api/Dockerfile`
+- start command:
 
-### Railway
+```bash
+sh -c "npx prisma migrate deploy && node dist/server.js"
+```
 
-Recommended for PostgreSQL and Redis if you prefer managed infrastructure.
+### Worker service
 
-Suggested setup:
+- no public domain required
+- Dockerfile path: `docker/worker/Dockerfile`
+- start command:
 
-- Railway PostgreSQL
-- Railway Redis
-- Inject connection strings into the API and worker environments
+```bash
+sh -c "npx prisma migrate deploy && node dist/worker.js"
+```
 
 ## Scalability Considerations
 
-This implementation already includes several scaling-oriented patterns:
+This project intentionally includes several production-oriented backend patterns:
 
-- Separation of write and redirect responsibilities
-- Redis cache for hot redirect paths
-- Asynchronous analytics pipeline to avoid blocking redirects
-- Route-based rate limiting for abuse protection
-- Graceful shutdown for safer restarts and deploys
-- Feature flags for incremental rollout
+- **Cache-aside redirect reads** reduce database pressure on hot links.
+- **Async analytics processing** keeps redirect latency low.
+- **Worker separation** isolates background processing from the request path.
+- **Feature flags** make behavior configurable without code changes.
+- **Graceful shutdown** improves deploy safety and service reliability.
+- **Dockerized services** provide consistent local and cloud execution.
+- **Typed schemas and CI** improve maintainability and correctness.
 
-Future improvements could include:
+## Notes About Empty Folders
 
-- custom aliases
-- user ownership and authentication
-- dead-letter queue for failed analytics jobs
-- observability with metrics and tracing
-- cache invalidation strategy enhancements
-- horizontal scaling of worker consumers
-- read replicas for PostgreSQL
+It is safe to remove empty folders that are no longer used.
 
-## Engineering Highlights
+Recommended rule:
+- keep folders that communicate real architecture or are about to be used
+- remove folders that stayed empty after implementation and are not needed anymore
 
-This repository demonstrates:
+A clean repository is better than keeping placeholder folders indefinitely.
 
-- modular backend architecture
-- clear separation of concerns
-- typed configuration management
-- repository and service patterns
-- asynchronous event processing
-- infrastructure-aware health checks
-- CI validation
-- containerized local development
+## License
 
-## Repository Goal
+This project is licensed under the MIT License.
 
-This project was built as a backend engineering portfolio piece to demonstrate practical system design implementation, production-ready backend patterns, and distributed systems thinking.
+See the [LICENSE](LICENSE) file for details.
+
+## Author
+
+**Marcos Astudillo**
+
+- Website: https://www.marcosastudillo.com
+- GitHub: https://github.com/marcos-astudillo
