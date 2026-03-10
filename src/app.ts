@@ -6,6 +6,8 @@ import rateLimit from "@fastify/rate-limit";
 import { env } from "./common/config/env";
 import { features } from "./common/config/features";
 import { HttpError } from "./common/errors/http-error";
+import { registerSwagger } from "./common/plugins/swagger";
+import { registerOpenApiRoute } from "./common/plugins/openapi-route";
 import { healthRoute } from "./health/health.route";
 import { healthController } from "./health/health.controller";
 import { linksRoutes } from "./modules/links/routes/links.route";
@@ -24,8 +26,11 @@ function isErrorWithStatusCode(
   );
 }
 
-export function buildApp() {
+export async function buildApp() {
   const app = Fastify({
+    routerOptions: {
+      ignoreTrailingSlash: true,
+    },
     logger: {
       level: process.env.LOG_LEVEL || "info",
       transport:
@@ -37,23 +42,36 @@ export function buildApp() {
     },
   });
 
-  app.register(cors);
-  app.register(helmet);
+  await app.register(cors);
+  app.register(helmet, {
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", "data:", "https:"],
+      },
+    },
+  });
 
   if (features.rateLimitEnabled) {
-    app.register(rateLimit, {
+    await app.register(rateLimit, {
       global: false,
       max: env.RATE_LIMIT_MAX,
       timeWindow: `${env.RATE_LIMIT_WINDOW_MINUTES} minute`,
     });
   }
 
-  app.get(healthRoute.url, async () => {
-    return healthController();
+  await registerSwagger(app);
+  await registerOpenApiRoute(app);
+
+  app.get(healthRoute.url, {
+    schema: healthRoute.schema,
+    handler: healthController,
   });
 
-  app.register(linksRoutes);
-  app.register(redirectRoutes);
+  await app.register(linksRoutes);
+  await app.register(redirectRoutes);
 
   app.setErrorHandler((error, _request, reply) => {
     if (error instanceof HttpError) {
@@ -74,6 +92,8 @@ export function buildApp() {
       message: "Internal server error",
     });
   });
+
+  await app.ready();
 
   return app;
 }

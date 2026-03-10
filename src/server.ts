@@ -5,9 +5,13 @@ import { env } from "./common/config/env";
 import { prisma } from "./infrastructure/database/prisma";
 import { redis } from "./infrastructure/cache/redis";
 
-const app = buildApp();
+let app: Awaited<ReturnType<typeof buildApp>>;
 
 async function shutdown(signal: string) {
+  if (!app) {
+    process.exit(0);
+  }
+
   app.log.info({ signal }, "Shutdown signal received");
 
   try {
@@ -31,17 +35,27 @@ async function shutdown(signal: string) {
 
 async function start() {
   try {
+    app = await buildApp();
+    console.log(app.printRoutes());
+
     await redis.connect();
     app.log.info("Redis connected");
 
+    console.log(app.printRoutes());
+
     await app.listen({
       port: env.PORT,
-      host: "0.0.0.0",
+      host: '0.0.0.0',
     });
 
     app.log.info(`Server running on port ${env.PORT}`);
   } catch (error) {
-    app.log.error(error, "Failed to start server");
+    if (app) {
+      app.log.error(error, "Failed to start server");
+    } else {
+      console.error("Failed to start server", error);
+    }
+
     process.exit(1);
   }
 }
@@ -54,4 +68,4 @@ process.on("SIGTERM", () => {
   void shutdown("SIGTERM");
 });
 
-start();
+void start();

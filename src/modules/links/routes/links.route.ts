@@ -7,7 +7,12 @@ import { createLinkSchema } from "../schemas/create-link.schema";
 
 export async function linksRoutes(app: FastifyInstance) {
   app.post("/v1/links", {
-    schema: createLinkSchema,
+    schema: {
+      ...createLinkSchema,
+      tags: ["Links"],
+      summary: "Create a short link",
+      description: "Creates a new short URL for a provided long URL.",
+    },
     config: features.rateLimitEnabled
       ? {
           rateLimit: {

@@ -3,7 +3,7 @@ import { buildApp } from "../../src/app";
 
 describe("Links API", () => {
   it("should create a short link", async () => {
-    const app = buildApp();
+    const app = await buildApp();
 
     const response = await app.inject({
       method: "POST",
@@ -23,7 +23,7 @@ describe("Links API", () => {
   });
 
   it("should redirect using short link", async () => {
-    const app = buildApp();
+    const app = await buildApp();
 
     const createResponse = await app.inject({
       method: "POST",

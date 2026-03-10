@@ -4,7 +4,7 @@ import { prisma } from "../../src/infrastructure/database/prisma";
 
 describe("Redirect Analytics E2E", () => {
   it("should create link, redirect, and persist analytics event", async () => {
-    const app = buildApp();
+    const app = await buildApp();
 
     const createResponse = await app.inject({
       method: "POST",
