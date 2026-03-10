@@ -6,6 +6,7 @@
 ![Redis](https://img.shields.io/badge/cache-redis-red)
 ![PostgreSQL](https://img.shields.io/badge/database-postgresql-blue)
 ![License](https://img.shields.io/github/license/marcos-astudillo/flashlink-service)
+![API Status](https://img.shields.io/badge/API-live-success)
 
 Production-ready URL shortener backend built with **Fastify**, **TypeScript**, **PostgreSQL**, **Redis**, **Prisma**, and **BullMQ**.
 
@@ -26,6 +27,16 @@ Flashlink Service provides a complete short-link platform with:
 - GitHub Actions CI pipeline
 - Railway deployment
 - OpenAPI documentation with Swagger UI
+
+---
+
+## Live API
+
+This service is deployed on Railway and exposes public documentation and health monitoring endpoints.
+
+[![Swagger UI](https://img.shields.io/badge/Swagger-UI-85EA2D?style=for-the-badge&logo=swagger)](https://flashlink-service-production.up.railway.app/docs)
+[![Health Check](https://img.shields.io/badge/Health-Check-success?style=for-the-badge&logo=railway)](https://flashlink-service-production.up.railway.app/health)
+[![OpenAPI](https://img.shields.io/badge/OpenAPI-JSON-blue?style=for-the-badge&logo=openapiinitiative)](https://flashlink-service-production.up.railway.app/openapi.json)
 
 ---
 
