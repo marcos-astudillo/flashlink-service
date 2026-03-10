@@ -1,8 +1,15 @@
 # Flashlink Service
 
+![Node](https://img.shields.io/badge/node.js-backend-green)
+![TypeScript](https://img.shields.io/badge/typescript-enabled-blue)
+![Docker](https://img.shields.io/badge/docker-containerized-blue)
+![Redis](https://img.shields.io/badge/cache-redis-red)
+![PostgreSQL](https://img.shields.io/badge/database-postgresql-blue)
+![License](https://img.shields.io/github/license/marcos-astudillo/flashlink-service)
+
 Production-ready URL shortener backend built with **Fastify**, **TypeScript**, **PostgreSQL**, **Redis**, **Prisma**, and **BullMQ**.
 
-This project was designed and implemented as a backend engineering portfolio project focused on clean architecture, scalability, observability, background processing, and production-oriented deployment practices.
+This project was designed as a **backend engineering portfolio project** demonstrating scalable architecture patterns used in real-world distributed systems.
 
 ## Overview
 
@@ -19,6 +26,18 @@ Flashlink Service provides a complete short-link platform with:
 - GitHub Actions CI pipeline
 - Railway deployment
 - OpenAPI documentation with Swagger UI
+
+---
+
+# System Design Reference
+
+This implementation follows the architecture described in the system design repository:
+
+https://github.com/marcos-astudillo/system-design-notes
+
+The goal is to demonstrate how a **system design document can be translated into a production-style backend implementation**.
+
+---
 
 ## Architecture
 
@@ -400,15 +419,13 @@ This project intentionally includes several production-oriented backend patterns
 - **Dockerized services** provide consistent local and cloud execution.
 - **Typed schemas and CI** improve maintainability and correctness.
 
-## Notes About Empty Folders
+## System Design Reference
 
-It is safe to remove empty folders that are no longer used.
+This implementation follows the architecture described in the system design document:
 
-Recommended rule:
-- keep folders that communicate real architecture or are about to be used
-- remove folders that stayed empty after implementation and are not needed anymore
+https://github.com/marcos-astudillo/system-design-notes
 
-A clean repository is better than keeping placeholder folders indefinitely.
+The project demonstrates how the design can be translated into a production-ready backend service.
 
 ## License
 
@@ -416,9 +433,26 @@ This project is licensed under the MIT License.
 
 See the [LICENSE](LICENSE) file for details.
 
-## Author
+---
 
-**Marcos Astudillo**
+## 📫 Connect With Me
 
-- Website: https://www.marcosastudillo.com
-- GitHub: https://github.com/marcos-astudillo
+<p align="center">
+
+  <a href="https://www.marcosastudillo.com">
+    <img src="https://img.shields.io/badge/Website-marcosastudillo.com-blueviolet?style=for-the-badge&logo=google-chrome" />
+  </a>
+
+  <a href="https://www.linkedin.com/in/marcos-astudillo-c/">
+    <img src="https://img.shields.io/badge/LinkedIn-Marcos%20Astudillo-blue?style=for-the-badge&logo=linkedin" />
+  </a>
+
+  <a href="https://github.com/marcos-astudillo">
+    <img src="https://img.shields.io/badge/GitHub-Marcos%20Astudillo-181717?style=for-the-badge&logo=github&logoColor=white" />
+  </a>
+
+  <a href="mailto:m.astudillo1986@gmail.com">
+    <img src="https://img.shields.io/badge/Email-m.astudillo1986%40gmail.com-red?style=for-the-badge&logo=gmail" />
+  </a>
+
+</p>
