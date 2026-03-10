@@ -7,6 +7,7 @@
 ![PostgreSQL](https://img.shields.io/badge/database-postgresql-blue)
 ![License](https://img.shields.io/github/license/marcos-astudillo/flashlink-service)
 ![API Status](https://img.shields.io/badge/API-live-success)
+![Architecture](https://img.shields.io/badge/system-design-documented-blue)
 
 Production-ready URL shortener backend built with **Fastify**, **TypeScript**, **PostgreSQL**, **Redis**, **Prisma**, and **BullMQ**.
 
